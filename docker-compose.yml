@@ -29,8 +29,8 @@ services:
       environment:
         ConnectionStrings__DefaultConnection: ${DB_CONNECTION}
         Jwt__Key: ${JWT_KEY}
-        Jwt__Issuer: ${JWT_ISSUER}
-        Jwt__Audience: ${JWT_AUDIENCE}
+        Jwt__Issuer: "ExpenseTrackerAPI"
+        Jwt__Audience: "ExpenseTrackerClient"
       restart: unless-stopped
 
     frontend:
