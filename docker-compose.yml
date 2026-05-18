@@ -5,7 +5,7 @@ services:
     container_name: expense-sql
     environment:
       ACCEPT_EULA: "Y"
-      SA_PASSWORD: "Expense@123"
+      SA_PASSWORD: ${SA_PASSWORD}
     ports:
       - "1433:1433"
     volumes:
@@ -27,10 +27,10 @@ services:
       ports:
         - "5000:8080"
       environment:
-        ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=ExpenseTrackerDb;User Id=sa;Password=Expense@123;TrustServerCertificate=True;"
-        Jwt__Key: "ExpenseTrackerSuperSecretKey2026!"
-        Jwt__Issuer: "ExpenseTrackerAPI"
-        Jwt__Audience: "ExpenseTrackerClient"
+        ConnectionStrings__DefaultConnection: ${DB_CONNECTION}
+        Jwt__Key: ${JWT_KEY}
+        Jwt__Issuer: ${JWT_ISSUER}
+        Jwt__Audience: ${JWT_AUDIENCE}
       restart: unless-stopped
 
     frontend:
