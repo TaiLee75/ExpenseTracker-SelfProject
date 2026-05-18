@@ -1,0 +1,139 @@
+<div class="dashboard-wrapper">
+
+  <!-- Header Row -->
+  <div class="dashboard-header">
+    <div>
+      <h1 class="page-heading">Tổng quan</h1>
+      <p class="page-subheading">Theo dõi thu chi của bạn</p>
+    </div>
+    <div class="period-selector">
+      <select class="select-glass" [(ngModel)]="currentMonth" (change)="onMonthChange()">
+        <option *ngFor="let m of months" [value]="m.value">{{ m.label }}</option>
+      </select>
+      <select class="select-glass" [(ngModel)]="currentYear" (change)="onMonthChange()">
+        <option [value]="2024">2024</option>
+        <option [value]="2025">2025</option>
+        <option [value]="2026">2026</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Đang tải dữ liệu...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="hasError && !isLoading" class="error-state glass-card">
+    <p>⚠️ Không thể tải dữ liệu. Vui lòng thử lại.</p>
+  </div>
+
+  <!-- Main Content -->
+  <ng-container *ngIf="!isLoading && !hasError && summary">
+
+    <!-- Summary Cards -->
+    <div class="summary-cards">
+      <div class="summary-card glass-card income-card">
+        <div class="card-icon income-icon">↑</div>
+        <div class="card-body">
+          <p class="card-label">Tổng Thu</p>
+          <p class="card-amount income-amount">{{ formatCurrency(summary.totalIncome) }}</p>
+        </div>
+      </div>
+
+      <div class="summary-card glass-card expense-card">
+        <div class="card-icon expense-icon">↓</div>
+        <div class="card-body">
+          <p class="card-label">Tổng Chi</p>
+          <p class="card-amount expense-amount">{{ formatCurrency(summary.totalExpense) }}</p>
+        </div>
+      </div>
+
+      <div class="summary-card glass-card balance-card">
+        <div class="card-icon balance-icon">≈</div>
+        <div class="card-body">
+          <p class="card-label">Chênh Lệch</p>
+          <p class="card-amount" [class.income-amount]="summary.netIncome >= 0" [class.expense-amount]="summary.netIncome < 0">
+            {{ formatCurrency(summary.netIncome) }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Two Column: Breakdown + Recent -->
+    <div class="content-grid">
+
+      <!-- Expense Breakdown -->
+      <div class="glass-card breakdown-card">
+        <h3 class="section-title">Chi tiêu theo danh mục</h3>
+        <div *ngIf="summary.expenseBreakdown.length === 0" class="empty-state">
+          Chưa có dữ liệu chi tiêu trong tháng này.
+        </div>
+        <div *ngFor="let item of summary.expenseBreakdown" class="breakdown-item">
+          <div class="breakdown-info">
+            <span class="category-dot" [style.background-color]="item.categoryColor || '#8b5cf6'"></span>
+            <span class="category-name">{{ item.categoryName }}</span>
+          </div>
+          <div class="breakdown-right">
+            <span class="breakdown-amount">{{ formatCurrency(item.totalAmount) }}</span>
+            <span class="breakdown-pct">{{ item.percentage | number:'1.0-1' }}%</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill expense-bar" [style.width]="getProgressWidth(item.percentage)"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Income Breakdown -->
+      <div class="glass-card breakdown-card">
+        <h3 class="section-title">Thu nhập theo danh mục</h3>
+        <div *ngIf="summary.incomeBreakdown.length === 0" class="empty-state">
+          Chưa có dữ liệu thu nhập trong tháng này.
+        </div>
+        <div *ngFor="let item of summary.incomeBreakdown" class="breakdown-item">
+          <div class="breakdown-info">
+            <span class="category-dot" [style.background-color]="item.categoryColor || '#10b981'"></span>
+            <span class="category-name">{{ item.categoryName }}</span>
+          </div>
+          <div class="breakdown-right">
+            <span class="breakdown-amount">{{ formatCurrency(item.totalAmount) }}</span>
+            <span class="breakdown-pct">{{ item.percentage | number:'1.0-1' }}%</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill income-bar" [style.width]="getProgressWidth(item.percentage)"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Recent Transactions -->
+    <div class="glass-card recent-card">
+      <h3 class="section-title">Giao dịch gần đây</h3>
+      <div *ngIf="recentTransactions.length === 0" class="empty-state">
+        Chưa có giao dịch nào.
+      </div>
+      <div class="transaction-list">
+        <div *ngFor="let tx of recentTransactions" class="transaction-row">
+          <div class="tx-left">
+            <div class="tx-icon" [style.background-color]="(tx.categoryColor || '#8b5cf6') + '20'" [style.color]="tx.categoryColor || '#8b5cf6'">
+              {{ tx.categoryIcon || '💳' }}
+            </div>
+            <div class="tx-info">
+              <p class="tx-category">{{ tx.categoryName }}</p>
+              <p class="tx-note">{{ tx.note || 'Không có ghi chú' }}</p>
+            </div>
+          </div>
+          <div class="tx-right">
+            <p class="tx-amount" [class.income-amount]="tx.type === 1" [class.expense-amount]="tx.type === 2">
+              {{ tx.type === 1 ? '+' : '-' }}{{ formatCurrency(tx.amount) }}
+            </p>
+            <p class="tx-date">{{ tx.date | date:'dd/MM/yyyy' }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </ng-container>
+</div>

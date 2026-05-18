@@ -1,0 +1,159 @@
+<div class="page-wrapper">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-heading">Danh mục</h1>
+      <p class="page-subheading">Quản lý các danh mục thu và chi</p>
+    </div>
+    <button class="btn-primary" id="btn-add-category" (click)="openCreateModal()">
+      + Thêm danh mục
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Đang tải...</p>
+  </div>
+
+  <!-- Content -->
+  <div class="categories-grid" *ngIf="!isLoading">
+
+    <!-- Income Categories -->
+    <div class="category-group">
+      <div class="group-header">
+        <span class="group-badge income-badge">↑ Thu nhập</span>
+        <span class="group-count">{{ incomeCategories.length }} danh mục</span>
+      </div>
+      <div *ngIf="incomeCategories.length === 0" class="empty-group glass-card">
+        Chưa có danh mục thu nhập nào. <a (click)="openCreateModal()" class="link">Thêm ngay</a>
+      </div>
+      <div class="category-cards">
+        <div *ngFor="let cat of incomeCategories" class="category-card glass-card">
+          <div class="cat-icon-wrapper" [style.background-color]="(cat.color || '#10b981') + '20'">
+            <span class="cat-icon-big" [style.color]="cat.color || '#10b981'">{{ cat.icon || '💳' }}</span>
+          </div>
+          <div class="cat-info">
+            <p class="cat-name">{{ cat.name }}</p>
+            <span class="cat-type income-type">Thu nhập</span>
+          </div>
+          <div class="cat-actions">
+            <button class="btn-icon edit-btn" (click)="openEditModal(cat)" title="Chỉnh sửa">✏️</button>
+            <button class="btn-icon delete-btn" (click)="openDeleteConfirm(cat)" title="Xóa">🗑️</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Expense Categories -->
+    <div class="category-group">
+      <div class="group-header">
+        <span class="group-badge expense-badge">↓ Chi tiêu</span>
+        <span class="group-count">{{ expenseCategories.length }} danh mục</span>
+      </div>
+      <div *ngIf="expenseCategories.length === 0" class="empty-group glass-card">
+        Chưa có danh mục chi tiêu nào. <a (click)="openCreateModal()" class="link">Thêm ngay</a>
+      </div>
+      <div class="category-cards">
+        <div *ngFor="let cat of expenseCategories" class="category-card glass-card">
+          <div class="cat-icon-wrapper" [style.background-color]="(cat.color || '#ef4444') + '20'">
+            <span class="cat-icon-big" [style.color]="cat.color || '#ef4444'">{{ cat.icon || '💳' }}</span>
+          </div>
+          <div class="cat-info">
+            <p class="cat-name">{{ cat.name }}</p>
+            <span class="cat-type expense-type">Chi tiêu</span>
+          </div>
+          <div class="cat-actions">
+            <button class="btn-icon edit-btn" (click)="openEditModal(cat)" title="Chỉnh sửa">✏️</button>
+            <button class="btn-icon delete-btn" (click)="openDeleteConfirm(cat)" title="Xóa">🗑️</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Create / Edit Modal -->
+<div class="modal-backdrop" *ngIf="showModal" (click)="closeModal()">
+  <div class="modal glass-card" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>{{ modalMode === 'create' ? '➕ Thêm danh mục' : '✏️ Chỉnh sửa danh mục' }}</h3>
+      <button class="btn-icon" (click)="closeModal()">✕</button>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="modal-form">
+
+      <div class="form-row">
+        <div class="form-group" style="flex: 2">
+          <label>Tên danh mục *</label>
+          <input class="glass-input" id="cat-name" type="text" formControlName="name" placeholder="Ví dụ: Ăn uống, Lương...">
+        </div>
+        <div class="form-group" style="flex: 1">
+          <label>Loại *</label>
+          <select class="select-glass" id="cat-type" formControlName="type">
+            <option value="1">Thu nhập</option>
+            <option value="2">Chi tiêu</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Icon Picker -->
+      <div class="form-group">
+        <label>Chọn icon</label>
+        <div class="icon-grid">
+          <button *ngFor="let icon of iconPresets" type="button" class="icon-btn"
+            [class.selected]="form.value.icon === icon"
+            (click)="selectIcon(icon)">{{ icon }}</button>
+        </div>
+        <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 13px; color: var(--text-muted)">Đã chọn:</span>
+          <span style="font-size: 22px">{{ form.value.icon }}</span>
+        </div>
+      </div>
+
+      <!-- Color Picker -->
+      <div class="form-group">
+        <label>Chọn màu</label>
+        <div class="color-grid">
+          <button *ngFor="let color of colorPresets" type="button" class="color-btn"
+            [class.selected]="form.value.color === color"
+            [style.background-color]="color"
+            (click)="selectColor(color)"></button>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" (click)="closeModal()">Huỷ</button>
+        <button type="submit" class="btn-primary" id="btn-submit-cat" [disabled]="form.invalid || isSaving">
+          {{ isSaving ? 'Đang lưu...' : (modalMode === 'create' ? 'Thêm danh mục' : 'Lưu thay đổi') }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-backdrop" *ngIf="showDeleteConfirm" (click)="cancelDelete()">
+  <div class="modal modal-sm glass-card" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>🗑️ Xác nhận xoá</h3>
+    </div>
+    <div class="modal-body">
+      <p>Bạn chắc chắn muốn xoá danh mục <strong>"{{ deletingCategory?.name }}"</strong>?</p>
+      <p class="delete-warning">⚠️ Các giao dịch liên quan có thể bị ảnh hưởng.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="cancelDelete()">Huỷ</button>
+      <button class="btn-danger" id="btn-confirm-delete-cat" (click)="confirmDelete()" [disabled]="isDeleting">
+        {{ isDeleting ? 'Đang xoá...' : 'Xác nhận xoá' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" *ngIf="showToast" [class.toast-success]="toastType === 'success'" [class.toast-error]="toastType === 'error'">
+  {{ toastMessage }}
+</div>

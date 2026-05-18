@@ -1,0 +1,177 @@
+<div class="page-wrapper">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-heading">Giao dịch</h1>
+      <p class="page-subheading">Quản lý thu chi của bạn</p>
+    </div>
+    <div class="header-actions">
+      <div class="period-selector">
+        <select class="select-glass" [(ngModel)]="currentMonth" (change)="onMonthChange()">
+          <option *ngFor="let m of months" [value]="m.value">{{ m.label }}</option>
+        </select>
+        <select class="select-glass" [(ngModel)]="currentYear" (change)="onMonthChange()">
+          <option [value]="2024">2024</option>
+          <option [value]="2025">2025</option>
+          <option [value]="2026">2026</option>
+        </select>
+      </div>
+      <button class="btn-primary" id="btn-add-transaction" (click)="openCreateModal()">
+        + Thêm giao dịch
+      </button>
+    </div>
+  </div>
+
+  <!-- Quick Stats -->
+  <div class="quick-stats" *ngIf="!isLoading">
+    <div class="stat-badge income-badge">
+      <span>Tổng thu</span>
+      <strong>{{ formatCurrency(totalIncome()) }}</strong>
+    </div>
+    <div class="stat-badge expense-badge">
+      <span>Tổng chi</span>
+      <strong>{{ formatCurrency(totalExpense()) }}</strong>
+    </div>
+    <div class="stat-badge net-badge" [class.net-positive]="totalIncome() - totalExpense() >= 0" [class.net-negative]="totalIncome() - totalExpense() < 0">
+      <span>Chênh lệch</span>
+      <strong>{{ formatCurrency(totalIncome() - totalExpense()) }}</strong>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Đang tải...</p>
+  </div>
+
+  <!-- Transaction Table -->
+  <div class="glass-card table-card" *ngIf="!isLoading">
+    <div *ngIf="transactions.length === 0" class="empty-state">
+      <p>📭</p>
+      <p>Chưa có giao dịch nào trong tháng này.</p>
+      <button class="btn-primary" (click)="openCreateModal()">Thêm giao dịch đầu tiên</button>
+    </div>
+
+    <table *ngIf="transactions.length > 0" class="tx-table">
+      <thead>
+        <tr>
+          <th>Danh mục</th>
+          <th>Ghi chú</th>
+          <th>Ngày</th>
+          <th class="text-right">Số tiền</th>
+          <th class="text-center">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let tx of transactions" class="tx-row">
+          <td>
+            <div class="category-cell">
+              <span class="cat-icon" [style.background-color]="(tx.categoryColor || '#8b5cf6') + '20'" [style.color]="tx.categoryColor || '#8b5cf6'">
+                {{ tx.categoryIcon || '💳' }}
+              </span>
+              <span class="cat-name">{{ tx.categoryName }}</span>
+              <span class="type-badge" [class.income-type]="tx.type === 1" [class.expense-type]="tx.type === 2">
+                {{ tx.type === 1 ? 'Thu' : 'Chi' }}
+              </span>
+            </div>
+          </td>
+          <td class="note-cell">{{ tx.note || '—' }}</td>
+          <td class="date-cell">{{ tx.date | date:'dd/MM/yyyy' }}</td>
+          <td class="amount-cell" [class.income-amount]="tx.type === 1" [class.expense-amount]="tx.type === 2">
+            {{ tx.type === 1 ? '+' : '-' }}{{ formatCurrency(tx.amount) }}
+          </td>
+          <td class="actions-cell">
+            <button class="btn-icon edit-btn" title="Chỉnh sửa" (click)="openEditModal(tx)">✏️</button>
+            <button class="btn-icon delete-btn" title="Xóa" (click)="openDeleteConfirm(tx)">🗑️</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- ============================================================ -->
+<!-- Create / Edit Modal -->
+<!-- ============================================================ -->
+<div class="modal-backdrop" *ngIf="showModal" (click)="closeModal()">
+  <div class="modal glass-card" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>{{ modalMode === 'create' ? '➕ Thêm giao dịch' : '✏️ Chỉnh sửa giao dịch' }}</h3>
+      <button class="btn-icon" (click)="closeModal()">✕</button>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="modal-form">
+
+      <div class="form-group">
+        <label>Danh mục *</label>
+        <select class="select-glass full-width" id="tx-category" formControlName="categoryId">
+          <option value="" disabled>Chọn danh mục</option>
+          <optgroup label="— Thu nhập —">
+            <option *ngFor="let c of incomeCategories" [value]="c.id">
+              {{ c.icon }} {{ c.name }}
+            </option>
+          </optgroup>
+          <optgroup label="— Chi tiêu —">
+            <option *ngFor="let c of expenseCategories" [value]="c.id">
+              {{ c.icon }} {{ c.name }}
+            </option>
+          </optgroup>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Số tiền (VNĐ) *</label>
+          <input class="glass-input" id="tx-amount" type="number" formControlName="amount" placeholder="0" min="1">
+        </div>
+        <div class="form-group">
+          <label>Ngày *</label>
+          <input class="glass-input" id="tx-date" type="date" formControlName="date">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Ghi chú</label>
+        <input class="glass-input" id="tx-note" type="text" formControlName="note" placeholder="Tuỳ chọn...">
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" (click)="closeModal()">Huỷ</button>
+        <button type="submit" class="btn-primary" id="btn-submit-tx" [disabled]="form.invalid || isSaving">
+          {{ isSaving ? 'Đang lưu...' : (modalMode === 'create' ? 'Thêm giao dịch' : 'Lưu thay đổi') }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- Delete Confirm Modal -->
+<!-- ============================================================ -->
+<div class="modal-backdrop" *ngIf="showDeleteConfirm" (click)="cancelDelete()">
+  <div class="modal modal-sm glass-card" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>🗑️ Xác nhận xoá</h3>
+    </div>
+    <div class="modal-body">
+      <p>Bạn chắc chắn muốn xoá giao dịch <strong>{{ deletingTx?.categoryName }}</strong> —
+      <strong [class.expense-amount]="deletingTx?.type === 2" [class.income-amount]="deletingTx?.type === 1">
+        {{ formatCurrency(deletingTx?.amount || 0) }}
+      </strong>?</p>
+      <p class="delete-warning">⚠️ Số dư sẽ được hoàn tác tự động.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="cancelDelete()">Huỷ</button>
+      <button class="btn-danger" id="btn-confirm-delete" (click)="confirmDelete()" [disabled]="isDeleting">
+        {{ isDeleting ? 'Đang xoá...' : 'Xác nhận xoá' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Notification -->
+<div class="toast" *ngIf="showToast" [class.toast-success]="toastType === 'success'" [class.toast-error]="toastType === 'error'">
+  {{ toastMessage }}
+</div>
