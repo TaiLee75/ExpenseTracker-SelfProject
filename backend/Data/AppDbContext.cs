@@ -15,20 +15,29 @@ namespace ExpenseTrackerAPI.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            // User
             modelBuilder.Entity<User>()
                 .Property(u => u.CurrentBalance)
-                .HasColumnType("decimal(18,2)");
+                .HasPrecision(18, 2);
 
+            // Transaction Amount
             modelBuilder.Entity<Transaction>()
                 .Property(t => t.Amount)
-                .HasColumnType("decimal(18,2)");
+                .HasPrecision(18, 2);
 
+            // Transaction Date
+            modelBuilder.Entity<Transaction>()
+                .Property(t => t.Date)
+                .HasColumnType("timestamp without time zone");
+
+            // Relationship: Transaction -> User
             modelBuilder.Entity<Transaction>()
                 .HasOne(t => t.User)
                 .WithMany(u => u.Transactions)
                 .HasForeignKey(t => t.UserId)
                 .OnDelete(DeleteBehavior.NoAction);
 
+            // Relationship: Transaction -> Category
             modelBuilder.Entity<Transaction>()
                 .HasOne(t => t.Category)
                 .WithMany(c => c.Transactions)
